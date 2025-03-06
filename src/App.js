@@ -60,11 +60,35 @@ function App() {
 
   const handleUseCurrentLocation = () => {
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(fetchWeatherByLocation, () => {
-        setError("La géolocalisation n'est pas autorisée");
-      });
+      navigator.geolocation.getCurrentPosition(
+        fetchWeatherByLocation,
+        (error) => {
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              setError("Veuillez autoriser l'accès à votre position dans les paramètres de votre navigateur pour utiliser cette fonctionnalité.");
+              break;
+            case error.POSITION_UNAVAILABLE:
+              setError("Les informations de position ne sont pas disponibles.");
+              break;
+            case error.TIMEOUT:
+              setError("La demande de position a expiré.");
+              break;
+            default:
+              setError("Une erreur inconnue s'est produite lors de la géolocalisation.");
+          }
+          // Set default location (Rabat) as fallback
+          fetchWeatherByCity("Rabat");
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 0
+        }
+      );
     } else {
       setError("La géolocalisation n'est pas supportée par votre navigateur");
+      // Set default location (Rabat) as fallback
+      fetchWeatherByCity("Rabat");
     }
   };
 
@@ -92,52 +116,14 @@ function App() {
       {weather && <CloudAnimation weatherCondition={weatherCondition} />}
       
       <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1, py: 4 }}>
-        {/* Boutons de contrôle */}
-        <Box sx={{ 
-          position: 'absolute', 
-          top: 20, 
-          right: 20, 
-          display: 'flex',
-          gap: 1
-        }}>
-          <IconButton 
-            onClick={() => setDarkMode(!darkMode)}
-            sx={{ 
-              color: 'white',
-              backgroundColor: 'rgba(0, 0, 0, 0.2)',
-              '&:hover': {
-                backgroundColor: 'rgba(0, 0, 0, 0.3)',
-              }
-            }}
-          >
-            {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
-          </IconButton>
-          <IconButton 
-            sx={{ 
-              color: 'white',
-              backgroundColor: 'rgba(0, 0, 0, 0.2)',
-              '&:hover': {
-                backgroundColor: 'rgba(0, 0, 0, 0.3)',
-              }
-            }}
-          >
-            <SettingsIcon />
-          </IconButton>
-        </Box>
-
-        {/* Barre de recherche */}
-        <Box sx={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          mt: 2, 
-          mb: 4 
-        }}>
+        {/* Search Bar */}
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
           <SearchBar 
-            onCitySelect={fetchWeatherByCity} 
-            onUseCurrentLocation={handleUseCurrentLocation} 
+            onCitySelect={fetchWeatherByCity}
+            onUseCurrentLocation={handleUseCurrentLocation}
           />
         </Box>
-
+       
         {error ? (
           <Box sx={{ 
             textAlign: 'center', 
